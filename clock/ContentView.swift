@@ -8,51 +8,51 @@
 import SwiftUI
 import SwiftData
 
+import SwiftUI
+
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    @State private var currentTime = Date()
+    @Environment(\.colorScheme) var colorScheme
+    let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
+        ZStack {
+            // 컬러 스킴에 따라 배경색 변경
+            (colorScheme == .dark ? Color.black : Color.white)
+                .edgesIgnoringSafeArea(.all)
+            
+            // 시계 표시
+            VStack {
+                Text(timeString())
+                    .font(.system(size: 190, weight: .thin))
+                    .foregroundColor(colorScheme == .dark ? .white : .black)
+                    .padding()
+                
+                Text(dateString())
+                    .font(.system(size: 30))
+                    .foregroundColor(.gray)
             }
-            .toolbar {
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
-            }
-        } detail: {
-            Text("Select an item")
+        }
+        .onReceive(timer) { _ in
+            self.currentTime = Date()
         }
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
-        }
+    
+    // 시간 포맷팅 (시:분:초)
+    private func timeString() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        return formatter.string(from: currentTime)
     }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
-        }
+    
+    // 날짜 포맷팅
+    private func dateString() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: currentTime)
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }
